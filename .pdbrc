@@ -1,0 +1,5 @@
+import readline
+import rlcompleter
+
+readline.parse_and_bind('"\e[A": history-search-backward')
+readline.parse_and_bind('"\e[B": history-search-forward')

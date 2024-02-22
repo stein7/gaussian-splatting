@@ -21,6 +21,8 @@ from tqdm import tqdm
 from utils.image_utils import psnr
 from argparse import ArgumentParser
 
+import pdb
+
 def readImages(renders_dir, gt_dir):
     renders = []
     gts = []
@@ -100,4 +102,5 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Training script parameters")
     parser.add_argument('--model_paths', '-m', required=True, nargs="+", type=str, default=[])
     args = parser.parse_args()
+    pdb.set_trace(header=f'------##---evaluate-----## ')
     evaluate(args.model_paths)
