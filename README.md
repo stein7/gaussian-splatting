@@ -1,3 +1,9 @@
+# Branch Details
+1. main - SourceCode Origin
+2. Cuda2Py - cuda 값들을 python tensor로 참조할 수 있도록 coding
+3. trial_01 - 2번 task를 위해서 객체를 tuple형태로 리턴할 수 있게까진 하였지만 python에서 호환되지않아 fail한 부분까지
+
+
 # 3D Gaussian Splatting for Real-Time Radiance Field Rendering
 Bernhard Kerbl*, Georgios Kopanas*, Thomas Leimkühler, George Drettakis (* indicates equal contribution)<br>
 | [Webpage](https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/) | [Full Paper](https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/3d_gaussian_splatting_high.pdf) | [Video](https://youtu.be/T_kXY43VZnk) | [Other GRAPHDECO Publications](http://www-sop.inria.fr/reves/publis/gdindex.php) | [FUNGRAPH project page](https://fungraph.inria.fr) |<br>
