@@ -68,8 +68,6 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
         rotations = pc.get_rotation
 
 
-    # If p
-    # 
     # recomputed colors are provided, use them. Otherwise, if it is desired to precompute colors
     # from SHs in Python, do it. If not, then SH -> RGB conversion will be done by rasterizer.
     shs = None
@@ -86,9 +84,8 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             shs = pc.get_features
     else:
         colors_precomp = override_color
-    #pdb.set_trace(header=f'------previous render operation------')
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
-    rendered_image, radii, toDo = rasterizer(
+    rendered_image, radii, toDo, toDo_ES, L_contri, accum_alpha = rasterizer(
         means3D = means3D,
         means2D = means2D,
         shs = shs,
@@ -98,15 +95,14 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
         rotations = rotations,
         cov3D_precomp = cov3D_precomp)
     
-    # print(f'rendered image : {rendered_image.shape}')
-    # print(f'radius : {radii.shape}')
-    # print(f'means 2D / 3D : {means2D.shape} / {means3D.shape}')
-    # print(f'sh : {shs.shape}')
-    # print(f'opacity : {opacity.shape}')
-    # print(f'scales : {scales.shape}')
-    # print(f'rotations : {rotations.shape}')
+    import pandas as pd
+    pd.DataFrame(data=toDo.cpu().detach().numpy()).to_csv('output/_DataVisualize/toDo.csv')
+    pd.DataFrame(data=toDo_ES.cpu().detach().numpy()).to_csv('output/_DataVisualize/toDo_ES.csv')
+    pd.DataFrame(data=L_contri.cpu().detach().numpy()).to_csv('output/_DataVisualize/L_contri.csv')
+    pd.DataFrame(data=accum_alpha.cpu().detach().numpy()).to_csv('output/_DataVisualize/accum_alpha.csv')
     
-    #pdb.set_trace(header=f'-----gs/gaussian_renderer/init.py : render method------')
+    #print( pd.DataFrame(data=accum_alpha[16*20:16*21, 16*22:16*23].cpu().detach().numpy()) )
+    
     # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
     # They will be excluded from value updates used in the splitting criteria.
     return {"render": rendered_image,
