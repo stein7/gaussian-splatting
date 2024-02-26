@@ -85,7 +85,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     else:
         colors_precomp = override_color
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
-    rendered_image, radii, toDo, toDo_ES, L_contri, accum_alpha = rasterizer(
+    rendered_image, radii, toDo, toDo_ES, L_contri, accum_alpha, power = rasterizer(
         means3D = means3D,
         means2D = means2D,
         shs = shs,
@@ -100,9 +100,15 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     pd.DataFrame(data=toDo_ES.cpu().detach().numpy()).to_csv('output/_DataVisualize/toDo_ES.csv')
     pd.DataFrame(data=L_contri.cpu().detach().numpy()).to_csv('output/_DataVisualize/L_contri.csv')
     pd.DataFrame(data=accum_alpha.cpu().detach().numpy()).to_csv('output/_DataVisualize/accum_alpha.csv')
-    
+    pd.DataFrame(data=power.cpu().detach().numpy()).to_csv('output/_DataVisualize/power.csv')
     #print( pd.DataFrame(data=accum_alpha[16*20:16*21, 16*22:16*23].cpu().detach().numpy()) )
-    
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    plt.figure(figsize=(10, 6))
+    plt.hist(power.cpu().numpy().flatten(), bins=50, alpha=0.7, color='blue')
+    sns.kdeplot(power.cpu().numpy().flatten(), fill=True, color="r")
+    plt.savefig('output/_DataVisualize/power.png')
+    print(f'Min:{power.min()}, mean:{power.float().mean()}, median:{power.median()}, max:{power.max()}, std:{power.float().std()}')
     # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
     # They will be excluded from value updates used in the splitting criteria.
     return {"render": rendered_image,
