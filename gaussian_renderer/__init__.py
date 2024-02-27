@@ -85,7 +85,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     else:
         colors_precomp = override_color
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
-    rendered_image, radii, toDo, toDo_ES, L_contri, accum_alpha, power = rasterizer(
+    rendered_image, radii, toDo, toDo_ES, L_contri, accum_alpha, power, depths = rasterizer(
         means3D = means3D,
         means2D = means2D,
         shs = shs,
@@ -111,6 +111,10 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     sns.kdeplot(power.cpu().numpy().flatten(), fill=True, color="r")
     plt.savefig(model_path+'DataVisualize/'+'power.png')
     print(f'Min:{power.min()}, max:{power.max()}, mean:{power.float().mean()}, std:{power.float().std()}')
+    
+    # depths_bytes = geomBuffer[:1917228]
+    # depths = depths_bytes.view(dtype=torch.float32)
+    
     # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
     # They will be excluded from value updates used in the splitting criteria.
     return {"render": rendered_image,
