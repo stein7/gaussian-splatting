@@ -17,7 +17,7 @@ from utils.sh_utils import eval_sh
 
 import pdb
 
-def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None):
+def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, model_path, scaling_modifier = 1.0, override_color = None):
     """
     Render the scene. 
     
@@ -96,19 +96,21 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
         cov3D_precomp = cov3D_precomp)
     
     import pandas as pd
-    pd.DataFrame(data=toDo.cpu().detach().numpy()).to_csv('output/_DataVisualize/toDo.csv')
-    pd.DataFrame(data=toDo_ES.cpu().detach().numpy()).to_csv('output/_DataVisualize/toDo_ES.csv')
-    pd.DataFrame(data=L_contri.cpu().detach().numpy()).to_csv('output/_DataVisualize/L_contri.csv')
-    pd.DataFrame(data=accum_alpha.cpu().detach().numpy()).to_csv('output/_DataVisualize/accum_alpha.csv')
-    pd.DataFrame(data=power.cpu().detach().numpy()).to_csv('output/_DataVisualize/power.csv')
+    from os import makedirs
+    makedirs(model_path+'DataVisualize', exist_ok=True)
+    pd.DataFrame(data=toDo.cpu().detach().numpy()).to_csv(model_path+'DataVisualize/'+'toDo.csv')
+    pd.DataFrame(data=toDo_ES.cpu().detach().numpy()).to_csv(model_path+'DataVisualize/'+'toDo_ES.csv')
+    pd.DataFrame(data=L_contri.cpu().detach().numpy()).to_csv(model_path+'DataVisualize/'+'L_contri.csv')
+    pd.DataFrame(data=accum_alpha.cpu().detach().numpy()).to_csv(model_path+'DataVisualize/'+'accum_alpha.csv')
+    pd.DataFrame(data=power.cpu().detach().numpy()).to_csv(model_path+'DataVisualize/'+'power.csv')
     #print( pd.DataFrame(data=accum_alpha[16*20:16*21, 16*22:16*23].cpu().detach().numpy()) )
     import matplotlib.pyplot as plt
     import seaborn as sns
     plt.figure(figsize=(10, 6))
     plt.hist(power.cpu().numpy().flatten(), bins=50, alpha=0.7, color='blue')
     sns.kdeplot(power.cpu().numpy().flatten(), fill=True, color="r")
-    plt.savefig('output/_DataVisualize/power.png')
-    print(f'Min:{power.min()}, mean:{power.float().mean()}, median:{power.median()}, max:{power.max()}, std:{power.float().std()}')
+    plt.savefig(model_path+'DataVisualize/'+'power.png')
+    print(f'Min:{power.min()}, max:{power.max()}, mean:{power.float().mean()}, std:{power.float().std()}')
     # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
     # They will be excluded from value updates used in the splitting criteria.
     return {"render": rendered_image,
