@@ -38,14 +38,14 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     raster_settings = GaussianRasterizationSettings(
         image_height=int(viewpoint_camera.image_height),
         image_width=int(viewpoint_camera.image_width),
-        tanfovx=lib.precision.fp(torch.tensor(tanfovx).cuda(), mode=17.1),
-        tanfovy=lib.precision.fp(torch.tensor(tanfovy).cuda(), mode=17.1),
-        bg=lib.precision.fp(bg_color, mode=17.1),
+        tanfovx=tanfovx, #lib.precision.fp(torch.tensor(tanfovx).cuda(), mode=17.1),
+        tanfovy=tanfovy, #lib.precision.fp(torch.tensor(tanfovy).cuda(), mode=17.1),
+        bg=bg_color, #lib.precision.fp(bg_color, mode=17.1),
         scale_modifier=scaling_modifier,
-        viewmatrix=lib.precision.fp(viewpoint_camera.world_view_transform, mode=17.1),
-        projmatrix=lib.precision.fp(viewpoint_camera.full_proj_transform, mode=17.1),
+        viewmatrix=viewpoint_camera.world_view_transform, #lib.precision.fp(viewpoint_camera.world_view_transform, mode=17.1),
+        projmatrix=viewpoint_camera.full_proj_transform, #lib.precision.fp(viewpoint_camera.full_proj_transform, mode=17.1),
         sh_degree=pc.active_sh_degree,
-        campos=lib.precision.fp(viewpoint_camera.camera_center, mode=17.1),
+        campos=viewpoint_camera.camera_center, #lib.precision.fp(viewpoint_camera.camera_center, mode=17.1),
         prefiltered=False,
         debug=pipe.debug
     )
@@ -77,10 +77,10 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     rotations = None
     cov3D_precomp = None
     if pipe.compute_cov3D_python:
-        cov3D_precomp = lib.precision.fp(pc.get_covariance(scaling_modifier), mode=17.1)
+        cov3D_precomp = pc.get_covariance(scaling_modifier)
     else:
-        scales = lib.precision.fp(pc.get_scaling, mode=17.1)
-        rotations = lib.precision.fp(pc.get_rotation, mode=17.1)
+        scales = pc.get_scaling #
+        rotations = pc.get_rotation #
 
     # If precomputed colors are provided, use them. Otherwise, if it is desired to precompute colors
     # from SHs in Python, do it. If not, then SH -> RGB conversion will be done by rasterizer.
@@ -92,19 +92,28 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
             dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
             sh2rgb = eval_sh(pc.active_sh_degree, shs_view, dir_pp_normalized)
-            colors_precomp =  lib.precision.fp(torch.clamp_min(sh2rgb + 0.5, 0.0), mode=17.1)
+            colors_precomp = torch.clamp_min(sh2rgb + 0.5, 0.0)
         else:
-            shs = lib.precision.fp(pc.get_features, mode=17.1)
+            shs = pc.get_features
     else:
         colors_precomp = override_color
-
+        
+    # with torch.no_grad():
+    #     means3D.data = lib.precision.fp(means3D, mode=17.1).data
+    #     opacity.data = lib.precision.fp(opacity, mode=17.1).data
+    #     if not shs            == None : shs.data = lib.precision.fp(pc.get_features, mode=17.1).data
+    #     if not colors_precomp == None : colors_precomp.data = lib.precision.fp(colors_precomp, mode=17.1).data
+    #     if not scales         == None : scales.data = lib.precision.fp(pc.get_scaling, mode=17.1).data
+    #     if not rotations      == None : rotations.data = lib.precision.fp(pc.get_rotation, mode=17.1).data
+    #     if not cov3D_precomp  == None : cov3D_precomp.data = lib.precision.fp(cov3D_precomp, mode=17.1).data
+        
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
     rendered_image, radii = rasterizer(
-        means3D = lib.precision.fp(means3D, mode=17.1).requires_grad_(),
+        means3D = means3D, 
         means2D = means2D,
         shs = shs,
         colors_precomp = colors_precomp,
-        opacities = lib.precision.fp(opacity, mode=17.1),
+        opacities = opacity, 
         scales = scales,
         rotations = rotations,
         cov3D_precomp = cov3D_precomp)
