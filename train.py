@@ -22,6 +22,9 @@ from tqdm import tqdm
 from utils.image_utils import psnr
 from argparse import ArgumentParser, Namespace
 from arguments import ModelParams, PipelineParams, OptimizationParams
+
+import lib.precision
+
 try:
     from torch.utils.tensorboard import SummaryWriter
     TENSORBOARD_FOUND = True
@@ -122,6 +125,14 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 if iteration % opt.opacity_reset_interval == 0 or (dataset.white_background and iteration == opt.densify_from_iter):
                     gaussians.reset_opacity()
 
+            
+            gaussians._xyz.data             = lib.precision.fp(gaussians._xyz.data, mode=17.1).data
+            gaussians._features_dc.data     = lib.precision.fp(gaussians._features_dc.data, mode=17.1).data
+            gaussians._features_rest.data   = lib.precision.fp(gaussians._features_rest.data, mode=17.1).data
+            gaussians._opacity.data         = lib.precision.fp(gaussians._opacity.data, mode=17.1).data
+            gaussians._scaling.data         = lib.precision.fp(gaussians._scaling.data, mode=17.1).data
+            gaussians._rotation.data        = lib.precision.fp(gaussians._rotation.data, mode=17.1).data
+            
             # Optimizer step
             if iteration < opt.iterations:
                 gaussians.optimizer.step()
