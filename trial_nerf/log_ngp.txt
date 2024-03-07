@@ -1,0 +1,16 @@
+[INFO] Trainer: ngp | 2024-03-07_09-00-46 | cuda | fp32 | trial_nerf
+[INFO] #parameters: 12667040
+[INFO] Loading latest checkpoint ...
+[WARN] No checkpoint found, model randomly initialized.
+[INFO] Trainer: ngp | 2024-03-07_10-42-17 | cuda | fp32 | trial_nerf
+[INFO] #parameters: 12667040
+[INFO] Loading latest checkpoint ...
+[WARN] No checkpoint found, model randomly initialized.
+[INFO] Trainer: ngp | 2024-03-07_10-42-52 | cuda | fp32 | trial_nerf
+[INFO] #parameters: 12667040
+[INFO] Loading latest checkpoint ...
+[WARN] No checkpoint found, model randomly initialized.
+[INFO] Trainer: ngp | 2024-03-07_10-43-36 | cuda | fp32 | trial_nerf
+[INFO] #parameters: 12667040
+[INFO] Loading latest checkpoint ...
+[WARN] No checkpoint found, model randomly initialized.
