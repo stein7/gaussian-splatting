@@ -40,6 +40,12 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
         gaussians = GaussianModel(dataset.sh_degree)
         scene = Scene(dataset, gaussians, load_iteration=iteration, shuffle=False)
 
+        
+        # scene.save(30010) #flip # gaussians._xyz[:, 1:] *= -1
+        # scene.save(30020) #exc # gaussians._xyz[:, [1, 2]] = gaussians._xyz[:, [2, 1]]
+        # scene.save(30030) #matmul # gaussians._xyz = gaussians._xyz @ Rot
+        # Rot = torch.tensor([[0, 0, 1], [1, 0, 0], [0, 1, 0]], dtype=torch.float32, device='cuda')
+        
         bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
@@ -68,7 +74,7 @@ if __name__ == "__main__":
                 cuda_ray=False, density_thresh=10, dt_gamma=0.0078125, error_map=False, ff=False, fovy=50, fp16=False, 
                 gui=False, iters=30000, lr=0.01, max_ray_batch=4096, max_spp=64, max_steps=1024, min_near=0.2, num_rays=4096, 
                 num_steps=512, offset=[0, 0, 0], patch_size=1, path='data/fox', preload=False, radius=5, rand_pose=-1, scale=0.33, 
-                seed=0, tcnn=False, test=True, update_extra_interval=16, upsample_steps=0, workspace='/home/sslunder0/project/NextProject/gaussian-splatting/nerf/trained_model/trial_nerf_chair')
+                seed=0, tcnn=False, test=True, update_extra_interval=16, upsample_steps=0, workspace='/home/sslunder0/project/NextProject/gaussian-splatting/nerf/trained_model/trial_chair_scale1')
 
     nerf_model = NeRFNetwork(
         encoding="hashgrid",
