@@ -50,7 +50,10 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     )
 
     rasterizer = GaussianRasterizer(raster_settings=raster_settings)
-
+    
+    # Rot = torch.tensor([[0, 0, 1], [1, 0, 0], [0, 1, 0]], dtype=torch.float32, device='cuda')
+    # pc._xyz = pc._xyz @ Rot
+    
     means3D = pc.get_xyz
     means2D = screenspace_points
     opacity = pc.get_opacity
@@ -79,13 +82,17 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
             dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
             sh2rgb = eval_sh(pc.active_sh_degree, shs_view, dir_pp_normalized)
-            #colors_precomp = torch.clamp_min(sh2rgb + 0.5, 0.0)
+            colors_precomp = torch.clamp_min(sh2rgb + 0.5, 0.0)
             
-            output = nerf_model.density(pc.get_xyz)
-            sigma = output['sigma']
-            geo_feat = output['geo_feat']
-            color = nerf_model.color(pc.get_xyz, dir_pp_normalized, geo_feat=geo_feat)
-            colors_precomp = color
+            
+            # output = nerf_model.density(pc.get_xyz)
+            # sigma = output['sigma']
+            # geo_feat = output['geo_feat']
+            # color = nerf_model.color(pc.get_xyz, dir_pp_normalized, geo_feat=geo_feat)
+            # colors_precomp = color
+            
+            pc._xyz = pc._xyz @ torch.inverse(Rot)
+            
             # torch.nonzero(sigma).shape[0]
             # ( color - colors_precomp ).mean()
             # import pandas as pd
