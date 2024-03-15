@@ -16,7 +16,6 @@ from scene.gaussian_model import GaussianModel
 from utils.sh_utils import eval_sh
 
 def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None):
-#def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, nerf_model, scaling_modifier = 1.0, override_color = None):
     """
     Render the scene. 
     
@@ -51,9 +50,6 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
 
     rasterizer = GaussianRasterizer(raster_settings=raster_settings)
     
-    # Rot = torch.tensor([[0, 0, 1], [1, 0, 0], [0, 1, 0]], dtype=torch.float32, device='cuda')
-    # pc._xyz = pc._xyz @ Rot
-    
     means3D = pc.get_xyz
     means2D = screenspace_points
     opacity = pc.get_opacity
@@ -81,7 +77,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             sh2rgb = eval_sh(pc.active_sh_degree, shs_view, dir_pp_normalized)
             #colors_precomp = torch.clamp_min(sh2rgb + 0.5, 0.0)
             
-            ###############
+            ############### NeRF
             dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
             dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
             
@@ -96,12 +92,6 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     else:
         colors_precomp = override_color
 
-    import matplotlib.pyplot as plt
-    print(f'model: {pc._nerf}')
-    total_params = sum(p.numel() for p in pc._nerf.parameters())
-    for name, param in pc._nerf.named_parameters():
-        print(f"{name}: {param.numel()} parameters")
-    
     
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
     rendered_image, radii = rasterizer(
