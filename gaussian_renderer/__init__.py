@@ -15,8 +15,8 @@ from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianR
 from scene.gaussian_model import GaussianModel
 from utils.sh_utils import eval_sh
 
-#def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None):
-def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, nerf_model, scaling_modifier = 1.0, override_color = None):
+def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None):
+#def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, nerf_model, scaling_modifier = 1.0, override_color = None):
     """
     Render the scene. 
     
@@ -75,47 +75,33 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     colors_precomp = None
     if override_color is None:
         if pipe.convert_SHs_python:
-            Rot = torch.tensor([[0, 0, 1], [1, 0, 0], [0, 1, 0]], dtype=torch.float32, device='cuda')
-            pc._xyz = pc._xyz @ Rot
-            
             shs_view = pc.get_features.transpose(1, 2).view(-1, 3, (pc.max_sh_degree+1)**2)
             dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
             dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
             sh2rgb = eval_sh(pc.active_sh_degree, shs_view, dir_pp_normalized)
-            colors_precomp = torch.clamp_min(sh2rgb + 0.5, 0.0)
+            #colors_precomp = torch.clamp_min(sh2rgb + 0.5, 0.0)
             
+            ###############
+            dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
+            dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
             
-            # output = nerf_model.density(pc.get_xyz)
-            # sigma = output['sigma']
-            # geo_feat = output['geo_feat']
-            # color = nerf_model.color(pc.get_xyz, dir_pp_normalized, geo_feat=geo_feat)
-            # colors_precomp = color
+            xyz = pc.get_xyz
             
-            pc._xyz = pc._xyz @ torch.inverse(Rot)
-            
-            # torch.nonzero(sigma).shape[0]
-            # ( color - colors_precomp ).mean()
-            # import pandas as pd
-            # pd.DataFrame(data=pc.get_xyz.cpu().detach().numpy()).to_csv('/home/sslunder0/project/NextProject/gaussian-splatting/output/chair/_DataVisualize'+'/xyz_rot.csv')
-            # pd.DataFrame(data=dir_pp_normalized.cpu().detach().numpy()).to_csv('/home/sslunder0/project/NextProject/gaussian-splatting/output/chair/_DataVisualize'+'/dir_rot.csv')
+            outputs = pc._nerf.density(xyz)
+            colors_precomp = pc._nerf.color(xyz, dir_pp_normalized, geo_feat=outputs['geo_feat'])
+            ##############
             
         else:
             shs = pc.get_features
     else:
         colors_precomp = override_color
 
-    # import pandas as pd
-    #from os import makedirs
-    #makedirs(model_path+'DataVisualize', exist_ok=True)
-    # pd.DataFrame(data=pc.get_xyz.cpu().detach().numpy()).to_csv('/home/sslunder0/project/NextProject/gaussian-splatting/output/chair/_DataVisualize'+'/xyz.csv')
-    # pd.DataFrame(data=dir_pp_normalized.cpu().detach().numpy()).to_csv('/home/sslunder0/project/NextProject/gaussian-splatting/output/chair/_DataVisualize'+'/dir.csv')
-    # import matplotlib.pyplot as plt
-    # import seaborn as sns
-    # plt.figure(figsize=(10, 6))
-    # plt.hist(power.cpu().numpy().flatten(), bins=50, alpha=0.7, color='blue')
-    # sns.kdeplot(power.cpu().numpy().flatten(), fill=True, color="r")
-    # plt.savefig(model_path+'DataVisualize/'+'power.png')
-    # print(f'Min:{power.min()}, max:{power.max()}, mean:{power.float().mean()}, std:{power.float().std()}')
+    import matplotlib.pyplot as plt
+    print(f'model: {pc._nerf}')
+    total_params = sum(p.numel() for p in pc._nerf.parameters())
+    for name, param in pc._nerf.named_parameters():
+        print(f"{name}: {param.numel()} parameters")
+    
     
     # Rasterize visible Gaussians to image, obtain their radii (on screen). 
     rendered_image, radii = rasterizer(

@@ -53,7 +53,7 @@ def get_encoder(encoding, input_dim=3,
     
     elif encoding == 'frequency':
         #encoder = FreqEncoder(input_dim=input_dim, max_freq_log2=multires-1, N_freqs=multires, log_sampling=True)
-        from freqencoder import FreqEncoder
+        from nerf.freqencoder import FreqEncoder
         encoder = FreqEncoder(input_dim=input_dim, degree=multires)
 
     elif encoding == 'sphere_harmonics':

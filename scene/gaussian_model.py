@@ -21,6 +21,25 @@ from simple_knn._C import distCUDA2
 from utils.graphics_utils import BasicPointCloud
 from utils.general_utils import strip_symmetric, build_scaling_rotation
 
+import argparse
+from nerf.utils import *
+from nerf.network import NeRFNetwork
+# opt = argparse.Namespace(H=1080, O=False, W=1920, bg_radius=-1, bound=2, ckpt='latest', clip_text='', color_space='srgb', 
+#             cuda_ray=False, density_thresh=10, dt_gamma=0.0078125, error_map=False, ff=False, fovy=50, fp16=False, 
+#             gui=False, iters=30000, lr=0.01, max_ray_batch=4096, max_spp=64, max_steps=1024, min_near=0.2, num_rays=4096, 
+#             num_steps=512, offset=[0, 0, 0], patch_size=1, path='data/fox', preload=False, radius=5, rand_pose=-1, scale=0.33, 
+#             seed=0, tcnn=False, test=True, update_extra_interval=16, upsample_steps=0, workspace='/home/sslunder0/project/NextProject/gaussian-splatting/nerf/trained_model/trial_chair_scale1')
+
+# nerf_model = NeRFNetwork(
+#         encoding="hashgrid",
+#         bound=2,#opt.bound,
+#         cuda_ray=False,#opt.cuda_ray,
+#         density_scale=1,
+#         min_near=0.2,#opt.min_near,
+#         density_thresh=10,#opt.density_thresh,
+#         bg_radius=-1,#opt.bg_radius,
+#     )
+
 class GaussianModel:
 
     def setup_functions(self):
@@ -57,6 +76,8 @@ class GaussianModel:
         self.percent_dense = 0
         self.spatial_lr_scale = 0
         self.setup_functions()
+        
+        self._nerf = None
 
     def capture(self):
         return (
@@ -72,6 +93,8 @@ class GaussianModel:
             self.denom,
             self.optimizer.state_dict(),
             self.spatial_lr_scale,
+            self._nerf.state_dict(),
+            self.nerf_optimizer.state_dict()
         )
     
     def restore(self, model_args, training_args):
@@ -86,11 +109,15 @@ class GaussianModel:
         xyz_gradient_accum, 
         denom,
         opt_dict, 
-        self.spatial_lr_scale) = model_args
+        self.spatial_lr_scale,
+        nerf_dict,
+        nerf_opt_dict) = model_args
         self.training_setup(training_args)
         self.xyz_gradient_accum = xyz_gradient_accum
         self.denom = denom
         self.optimizer.load_state_dict(opt_dict)
+        self._nerf.load_state_dict(nerf_dict)
+        self.nerf_optimizer.load_state_dict(nerf_opt_dict)
 
     @property
     def get_scaling(self):
@@ -165,6 +192,21 @@ class GaussianModel:
                                                     lr_final=training_args.position_lr_final*self.spatial_lr_scale,
                                                     lr_delay_mult=training_args.position_lr_delay_mult,
                                                     max_steps=training_args.position_lr_max_steps)
+        
+        self._nerf = NeRFNetwork(
+                        encoding="frequency", #"hashgrid", 
+                        bound=2,#opt.bound,
+                        cuda_ray=False,#opt.cuda_ray,
+                        density_scale=1,
+                        min_near=0.2,#opt.min_near,
+                        density_thresh=10,#opt.density_thresh,
+                        bg_radius=-1,#opt.bg_radius,
+                    )
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self._nerf.to(device)
+        self.nerf_optimizer = torch.optim.Adam(self._nerf.parameters(), lr=0.001)
+        
+        
 
     def update_learning_rate(self, iteration):
         ''' Learning rate scheduling per step '''
