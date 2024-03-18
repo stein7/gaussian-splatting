@@ -194,7 +194,7 @@ class GaussianModel:
                                                     max_steps=training_args.position_lr_max_steps)
         
         self._nerf = NeRFNetwork(
-                        encoding="frequency", #"hashgrid", 
+                        encoding=training_args.encoder, #"hashgrid"/ "frequency"
                         bound=2,#opt.bound,
                         cuda_ray=False,#opt.cuda_ray,
                         density_scale=1,
