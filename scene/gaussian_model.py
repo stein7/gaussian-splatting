@@ -206,6 +206,24 @@ class GaussianModel:
         self._nerf.to(device)
         self.nerf_optimizer = torch.optim.Adam(self._nerf.parameters(), lr=0.001)
         
+        import sys
+        sys.path.append('/home/sslunder0/project/refer/torch-ngp/')
+        from tensoRF.network import NeRFNetwork as tensoRF_Net
+        self._tensoRF_Net = tensoRF_Net(
+                                resolution=[128] * 3,
+                                bound=2,
+                                cuda_ray=False,
+                                density_scale=1,
+                                min_near=0.2,
+                                density_thresh=10,
+                                bg_radius=-1,
+                            )
+        self._tensoRF_Net.cuda()
+        N = 5  
+        bound = 2 
+        x = torch.rand(N, 3) * (2 * bound) - bound #[-b, b]
+        d = torch.rand(N, 3) * 2 - 1  #[-1, 1]
+        self._tensoRF_Net(x.cuda(), d.cuda())
         
 
     def update_learning_rate(self, iteration):
