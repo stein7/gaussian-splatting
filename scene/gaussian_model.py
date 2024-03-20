@@ -39,6 +39,11 @@ from nerf.network import NeRFNetwork
 #         density_thresh=10,#opt.density_thresh,
 #         bg_radius=-1,#opt.bg_radius,
 #     )
+import sys
+sys.path.append('/home/sslunder0/project/refer/torch-ngp/')
+sys.path.append('/home/sslunder0/project/refer/nerf-pytorch/')
+from run_nerf_helpers import *
+
 
 class GaussianModel:
 
@@ -206,8 +211,8 @@ class GaussianModel:
         self._nerf.to(device)
         self.nerf_optimizer = torch.optim.Adam(self._nerf.parameters(), lr=0.001)
         
-        import sys
-        sys.path.append('/home/sslunder0/project/refer/torch-ngp/')
+        
+        
         from tensoRF.network import NeRFNetwork as tensoRF_Net
         self._tensoRF_Net = tensoRF_Net(
                                 resolution=[128] * 3,
@@ -224,6 +229,23 @@ class GaussianModel:
         x = torch.rand(N, 3) * (2 * bound) - bound #[-b, b]
         d = torch.rand(N, 3) * 2 - 1  #[-1, 1]
         self._tensoRF_Net(x.cuda(), d.cuda())
+        
+        
+        embed_fn, input_ch = get_embedder(10, 0)
+        embeddirs_fn, input_ch_views = get_embedder(4, 0)
+        self._vanila_nerf = NeRF(D=8, W=256,
+                                input_ch=input_ch, output_ch=5, skips=[4],
+                                input_ch_views=input_ch_views, use_viewdirs=True)
+        
+        in_xyz = torch.randn(5, 3)
+        in_dir = torch.randn(5, 3)
+        em_xyz = embed_fn(in_xyz) 
+        em_dir = embeddirs_fn(in_dir) 
+        ems = torch.cat( (em_xyz, em_dir), dim=1 ).unsqueeze(0)
+        self._vanila_nerf(ems)
+        
+        
+        
         
 
     def update_learning_rate(self, iteration):
