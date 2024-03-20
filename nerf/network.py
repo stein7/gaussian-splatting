@@ -38,7 +38,7 @@ class NeRFNetwork(NeRFRenderer):
                 in_dim = hidden_dim
             
             if l == num_layers - 1:
-                out_dim = 1 + self.geo_feat_dim # 1 sigma + 15 SH features for color
+                out_dim = (1 + self.geo_feat_dim)*3 # 1 sigma + 15 SH features for color
             else:
                 out_dim = hidden_dim
             
@@ -137,10 +137,11 @@ class NeRFNetwork(NeRFRenderer):
         sigma = trunc_exp(h[..., 0])
         geo_feat = h[..., 1:]
 
-        return {
-            'sigma': sigma,
-            'geo_feat': geo_feat,
-        }
+        # return {
+        #     'sigma': sigma,
+        #     'geo_feat': geo_feat,
+        # }
+        return h
 
     def background(self, x, d):
         # x: [N, 2], in [-1, 1]

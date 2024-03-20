@@ -71,21 +71,21 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     colors_precomp = None
     if override_color is None:
         if pipe.convert_SHs_python:
-            shs_view = pc.get_features.transpose(1, 2).view(-1, 3, (pc.max_sh_degree+1)**2)
+            ############### NeRF change dim
+            xyz = pc.get_xyz
+            ## outdim 48을 단순히 순서대로 16개씩 자르는 경우
+            # geo_feat = pc._nerf.density(xyz).view(-1, 3, 16)
+            # shs_view = geo_feat.view(-1, 3, (pc.max_sh_degree+1)**2)
+            ## outdim 48을 RGB순서대로 3개씩 자르는 경우
+            geo_feat2 = pc._nerf.density(xyz).view(-1, 16, 3)
+            shs_view = geo_feat2.transpose(1, 2).view(-1, 3, (pc.max_sh_degree+1)**2)
+            ##############
+            
+            #shs_view = pc.get_features.transpose(1, 2).view(-1, 3, (pc.max_sh_degree+1)**2)
             dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
             dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
             sh2rgb = eval_sh(pc.active_sh_degree, shs_view, dir_pp_normalized)
-            #colors_precomp = torch.clamp_min(sh2rgb + 0.5, 0.0)
-            
-            ############### NeRF
-            dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
-            dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
-            
-            xyz = pc.get_xyz
-            
-            outputs = pc._nerf.density(xyz)
-            colors_precomp = pc._nerf.color(xyz, dir_pp_normalized, geo_feat=outputs['geo_feat'])
-            ##############
+            colors_precomp = torch.clamp_min(sh2rgb + 0.5, 0.0)
             
         else:
             shs = pc.get_features
