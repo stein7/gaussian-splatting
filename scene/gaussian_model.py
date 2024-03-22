@@ -209,7 +209,7 @@ class GaussianModel:
                     )
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._nerf.to(device)
-        self.nerf_optimizer = torch.optim.Adam(self._nerf.parameters(), lr=0.001)
+        self.nerf_optimizer = torch.optim.Adam(self._nerf.get_params(1e-2), betas=(0.9, 0.99), eps=1e-15)#lr=0.001 기존
         
         
         
@@ -224,25 +224,30 @@ class GaussianModel:
                                 bg_radius=-1,
                             )
         self._tensoRF_Net.cuda()
+        self._tensoRF_optimizer = torch.optim.Adam(self._tensoRF_Net.get_params(2e-2, 1e-3), betas=(0.9, 0.99), eps=1e-15)
+        
         N = 5  
         bound = 2 
         x = torch.rand(N, 3) * (2 * bound) - bound #[-b, b]
         d = torch.rand(N, 3) * 2 - 1  #[-1, 1]
-        self._tensoRF_Net(x.cuda(), d.cuda())
+        #self._tensoRF_Net(x.cuda(), d.cuda())
         
         
-        embed_fn, input_ch = get_embedder(10, 0)
-        embeddirs_fn, input_ch_views = get_embedder(4, 0)
-        self._vanila_nerf = NeRF(D=8, W=256,
+        
+        self._vanilla_embed_fn, input_ch = get_embedder(10, 0)
+        self._vanilla_embeddirs_fn, input_ch_views = get_embedder(4, 0)
+        self._vanilla_nerf = NeRF(D=8, W=256,
                                 input_ch=input_ch, output_ch=5, skips=[4],
                                 input_ch_views=input_ch_views, use_viewdirs=True)
+        self._vanilla_nerf.cuda()
+        self._vanilla_optimizer = torch.optim.Adam(self._vanilla_nerf.parameters(), lr=5e-4, betas=(0.9, 0.999))
         
         in_xyz = torch.randn(5, 3)
         in_dir = torch.randn(5, 3)
-        em_xyz = embed_fn(in_xyz) 
-        em_dir = embeddirs_fn(in_dir) 
+        em_xyz = self._vanilla_embed_fn(in_xyz) 
+        em_dir = self._vanilla_embeddirs_fn(in_dir) 
         ems = torch.cat( (em_xyz, em_dir), dim=1 ).unsqueeze(0)
-        self._vanila_nerf(ems)
+        #self._vanilla_nerf(ems)
         
         
         

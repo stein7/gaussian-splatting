@@ -81,6 +81,8 @@ class Scene:
                                                            "iteration_" + str(self.loaded_iter),
                                                            "point_cloud.ply"))
             self.gaussians._nerf = load(os.path.join(self.model_path, "point_cloud", "iteration_" + str(self.loaded_iter), "nerf_model.pt"))
+            self.gaussians._tensoRF_Net = load(os.path.join(self.model_path, "point_cloud", "iteration_" + str(self.loaded_iter), "tensoRF_model.pt"))
+            self.gaussians._vanilla_nerf = load(os.path.join(self.model_path, "point_cloud", "iteration_" + str(self.loaded_iter), "vanilla_nerf_model.pt"))
         else:
             self.gaussians.create_from_pcd(scene_info.point_cloud, self.cameras_extent)
 
@@ -88,6 +90,10 @@ class Scene:
         point_cloud_path = os.path.join(self.model_path, "point_cloud/iteration_{}".format(iteration))
         self.gaussians.save_ply(os.path.join(point_cloud_path, "point_cloud.ply"))
         save(self.gaussians._nerf, os.path.join(self.model_path, "point_cloud/iteration_{}".format(iteration), "nerf_model.pt"))
+        save(self.gaussians._tensoRF_Net, os.path.join(self.model_path, "point_cloud/iteration_{}".format(iteration), "tensoRF_model.pt"))
+        save(self.gaussians._vanilla_nerf, os.path.join(self.model_path, "point_cloud/iteration_{}".format(iteration), "vanilla_nerf_model.pt"))
+        
+        
 
     def getTrainCameras(self, scale=1.0):
         return self.train_cameras[scale]

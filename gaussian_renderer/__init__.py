@@ -75,18 +75,24 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
             dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
             sh2rgb = eval_sh(pc.active_sh_degree, shs_view, dir_pp_normalized)
-            #colors_precomp = torch.clamp_min(sh2rgb + 0.5, 0.0)
+            colors_precomp_default = torch.clamp_min(sh2rgb + 0.5, 0.0)
             
-            ############### NeRF
-            dir_pp = (pc.get_xyz - viewpoint_camera.camera_center.repeat(pc.get_features.shape[0], 1))
-            dir_pp_normalized = dir_pp/dir_pp.norm(dim=1, keepdim=True)
-            
+            ############### NeRF MLP ################## 
             xyz = pc.get_xyz
-            
+            #### instant ngp ####
             outputs = pc._nerf.density(xyz)
-            colors_precomp = pc._nerf.color(xyz, dir_pp_normalized, geo_feat=outputs['geo_feat'])
-            ##############
+            colors_precomp_instant = pc._nerf.color(xyz, dir_pp_normalized, geo_feat=outputs['geo_feat'])
+            #### tensoRF ####
             
+            colors_precomp_tensoRF = pc._tensoRF_Net.color(xyz, dir_pp_normalized)
+            #### vanilla nerf ####
+            em_xyz = pc._vanilla_embed_fn(xyz)
+            em_dir = pc._vanilla_embeddirs_fn(dir_pp_normalized)
+            ems = torch.cat((em_xyz, em_dir), dim=1).unsqueeze(0)
+            colors_precomp_vanilla = torch.sigmoid( pc._vanilla_nerf(ems).squeeze(0)[..., :3] )
+            ############## ################## #########
+            
+            colors_precomp = colors_precomp_tensoRF
         else:
             shs = pc.get_features
     else:
