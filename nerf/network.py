@@ -28,12 +28,12 @@ class NeRFNetwork(NeRFRenderer):
         self.num_layers = num_layers
         self.hidden_dim = hidden_dim
         self.geo_feat_dim = geo_feat_dim
-        self.encoder, self.in_dim = get_encoder(encoding, desired_resolution=2048 * bound)
+        self.encoder, self.in_dim = get_encoder(encoding, desired_resolution=2048 * bound, num_levels=16, level_dim=1) #outdim = LF
 
         sigma_net = []
         for l in range(num_layers):
             if l == 0:
-                in_dim = self.in_dim
+                in_dim = self.in_dim #+ 3 # + xyz dim
             else:
                 in_dim = hidden_dim
             
@@ -128,6 +128,7 @@ class NeRFNetwork(NeRFRenderer):
 
         x = self.encoder(x, bound=self.bound)
         h = x
+        #h = torch.cat((enc_x, x), dim=1) # h: [N, 16+3]
         for l in range(self.num_layers):
             h = self.sigma_net[l](h)
             if l != self.num_layers - 1:
